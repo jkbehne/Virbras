@@ -1,0 +1,11 @@
+# Ignored file types
+*~
+*.csv
+*.so
+*.swp
+*.db
+
+# Ignored artifacts
+__pycache__/
+.pypirc
+**/.DS_Store
