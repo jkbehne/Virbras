@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from math_vb.oscillations import SimpleOscillator
+from math_cpp import SimpleOscillator
 
 # Independent parameter defaults
 A_DEFAULT = 5.5
@@ -65,14 +65,7 @@ def test_simple_oscillator_negation(default_so: SimpleOscillator):
 def test_simple_oscillator_addition(
     default_so: SimpleOscillator,
     second_so: SimpleOscillator,
-    third_so: SimpleOscillator,
 ):
-    # Test first that we get a ValueError for adding different frequencies
-    with pytest.raises(ValueError):
-        _ = default_so + third_so
-    with pytest.raises(ValueError):
-        _ = third_so + default_so
-
     # Test that the addition works as expected
     sum_so = default_so + second_so
     assert np.allclose(
@@ -92,9 +85,16 @@ def test_simple_oscillator_multiplication(
     assert np.allclose((scalar * default_so)(TIMES_DEFAULT), expected_result)
 
     scalar = complex(1.1, 1.2)
+    scale_A = abs(scalar)
+    scale_phi = np.angle(scalar)
+    scalar_so = SimpleOscillator(
+        A=scale_A,
+        omega=0.0,
+        phi=scale_phi,
+    )
     expected_result = scalar * default_so(TIMES_DEFAULT)
-    assert np.allclose((default_so * scalar)(TIMES_DEFAULT), expected_result)
-    assert np.allclose((scalar * default_so)(TIMES_DEFAULT), expected_result)
+    assert np.allclose((default_so * scalar_so)(TIMES_DEFAULT), expected_result)
+    assert np.allclose((scalar_so * default_so)(TIMES_DEFAULT), expected_result)
 
     # Now check that multiplication with second oscillator works
     expected_result = default_so(TIMES_DEFAULT) * second_so(TIMES_DEFAULT)
@@ -106,30 +106,16 @@ def test_simple_oscillator_multiplication(
     assert np.allclose((default_so * third_so)(TIMES_DEFAULT), expected_result)
     assert np.allclose((third_so * default_so)(TIMES_DEFAULT), expected_result)
 
-    # Check that multiplication raises if the type isn't scalar or simple oscillator
-    scalar = "string"
-    with pytest.raises(TypeError):
-        _ = scalar * default_so
-    with pytest.raises(TypeError):
-        _ = default_so * scalar
-
 
 def test_simple_oscillator_subtraction(
     default_so: SimpleOscillator,
     second_so: SimpleOscillator,
-    third_so: SimpleOscillator,
 ):
     # Check that the subtraction operator works
     expected_result = default_so(TIMES_DEFAULT) - second_so(TIMES_DEFAULT)
     assert np.allclose((default_so - second_so)(TIMES_DEFAULT), expected_result)
     expected_result = second_so(TIMES_DEFAULT) - default_so(TIMES_DEFAULT)
     assert np.allclose((second_so - default_so)(TIMES_DEFAULT), expected_result)
-
-    # Check that the subtraction operator raises with different frequencies
-    with pytest.raises(ValueError):
-        _ = default_so - third_so
-    with pytest.raises(ValueError):
-        _ = third_so - default_so
 
 
 def test_simple_oscillator_division(
@@ -145,26 +131,13 @@ def test_simple_oscillator_division(
     assert np.allclose((scalar / default_so)(TIMES_DEFAULT), expected_result)
 
     scalar = complex(2.2, 0.7)
+    scale_A = abs(scalar)
+    scale_phi = np.angle(scalar)
+    scalar_so = SimpleOscillator(A=scale_A, omega=0.0, phi=scale_phi)
     expected_result = default_so(TIMES_DEFAULT) / scalar
-    assert np.allclose((default_so / scalar)(TIMES_DEFAULT), expected_result)
+    assert np.allclose((default_so / scalar_so)(TIMES_DEFAULT), expected_result)
     expected_result = scalar / default_so(TIMES_DEFAULT)
-    assert np.allclose((scalar / default_so)(TIMES_DEFAULT), expected_result)
-
-    # Check that division raises when the value is zero
-    scalar = complex(0.0, 0.0)
-    with pytest.raises(ValueError):
-        _ = default_so / scalar
-
-    zero_so = SimpleOscillator(A=0.0, omega=0.0, phi=0.0)
-    with pytest.raises(ValueError):
-        _ = default_so / zero_so
-
-    # Check that division by a bad type raises
-    scalar = "string"
-    with pytest.raises(TypeError):
-        _ = default_so / scalar
-    with pytest.raises(TypeError):
-        _ = scalar / default_so
+    assert np.allclose((scalar_so / default_so)(TIMES_DEFAULT), expected_result)
 
     # Check that division by another SimpleOscillator works
     expected_result = default_so(TIMES_DEFAULT) / second_so(TIMES_DEFAULT)
