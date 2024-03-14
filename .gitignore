@@ -6,6 +6,8 @@
 *.db
 
 # Ignored artifacts
+**/build
+**/.vscode
 __pycache__/
 .pypirc
 **/.DS_Store
