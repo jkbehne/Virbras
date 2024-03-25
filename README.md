@@ -9,5 +9,5 @@ Currently, all dependencies are header-only, although that could change in the f
 dependencies such as NumPy and SciPy.
 
 # Current State
-At this point, this repository serves more as a project intended to revitalize the author's skills in terms of the CMake, C++, Eigen, PyBind11, and Boost 
+At this point, this repository serves more as a project intended to revitalize the author's skills in terms of the CMake, modern C++, Eigen, PyBind11, and Boost 
 technology stack. In the future, this may change, although that depends on the amount of ongoing effort the author is able to apply to this project.
