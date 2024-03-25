@@ -1,6 +1,20 @@
+/**
+ * The intent of this file is to provide a template library for so
+ * called tapped delay lines. Essentially, these systems implement
+ * finite difference equations:
+ * 
+ * y[n] = sum_(k=1:N) b_k * x[n - M_k]
+ * 
+ * where N is the number of taps and M_k is the delay in integer
+ * samples for tap k. By convention, we assume M_1 = 0, so there's
+ * always one tap corresponding to the input signal. Note, if that's
+ * not desired, b_1 can always be set to zero.
+ * 
+ * While this library is generically templated, it is obviously only
+ * reasonable for integer and floating point scalar types. Anything else
+ * will likely produce strange results, if it even compiles.
+*/
 #pragma once
-
-#include <iostream>
 
 #include <algorithm>
 #include <memory>
@@ -8,6 +22,17 @@
 
 #include "signal/signal_stream.hpp"
 
+/**
+ * Basic class for tapped delay line templated on the scalar type
+ * 
+ * Note: The scalar type corresponds to the type of each entry in the
+ * input and output. For this use case, those must match.
+ * 
+ * This class implements the finite difference equation described in the
+ * file comment. Depending on the input and output streams, it can operate
+ * on real-time data sequences. Though note, it can also be setup to operate
+ * on non-real-time sequence as well (this is done for testing).
+*/
 template<typename ScalarType>
 class TappedDelayLine
 {
@@ -24,6 +49,11 @@ class TappedDelayLine
     int buffer_idx;
 
   private: // Methods
+    /**
+     * Produce the next output based on the current input and internal state
+     * 
+     * A circular buffer is used to manage reading the delayed samples.
+    */
     ScalarType next(const ScalarType input)
     {
       // Compute the output
@@ -51,6 +81,11 @@ class TappedDelayLine
     }
 
   public: // Methods
+    /**
+     * Constructor mostly deals with finding max delay and setting up the buffer
+     * 
+     * Note: The buffer size corresponds with the maximum delay required
+    */
     TappedDelayLine(
       std::vector<int> delays_,
       std::vector<ScalarType> coeffs_
@@ -66,6 +101,15 @@ class TappedDelayLine
       buffer = std::vector<ScalarType>(max_delay);
     }
 
+    /**
+     * Process an entire input and write to the output until input is exhausted
+     * 
+     * Note: This function won't return if the input stream is a real-time
+     * stream, unless the stream eventually fails to return a result.
+     * 
+     * Note: This function writes delay transients, which is the maximum delay
+     * in terms of number of samples
+    */
     void process(const InputType& isignal, const OutputType& osignal)
     {
       // Make sure pointers are valid
