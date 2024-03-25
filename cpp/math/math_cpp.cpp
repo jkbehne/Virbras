@@ -3,10 +3,12 @@
  * library (which obviously has to be built). The functions can then be called
  * naturally from Python.
 */
+#include <string>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 
-#include "/Users/josh/Virbras/cpp/math/oscillations.hpp"
+#include "math/oscillations.hpp"
 
 namespace py = pybind11;
 
@@ -23,6 +25,14 @@ PYBIND11_MODULE(math_cpp, m)
     .def_readonly("A", &SimpleOscillator::A)
     .def_readonly("omega", &SimpleOscillator::omega)
     .def_readonly("phi", &SimpleOscillator::phi)
+    .def(
+      "__repr__",
+      [](const SimpleOscillator& so)
+      {
+        return "SimpleOscillator(A=" + std::to_string(so.A) + ", omega=" + std::to_string(so.omega)
+          + ", phi=" + std::to_string(so.phi) + ")";
+      }
+    )
     .def(
       "__call__",
       &SimpleOscillator::operator(),

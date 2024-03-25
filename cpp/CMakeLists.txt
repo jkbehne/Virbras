@@ -9,3 +9,4 @@ add_library(standard_compiler_flags INTERFACE)
 target_compile_features(standard_compiler_flags INTERFACE cxx_std_20)
 
 add_subdirectory(math)
+add_subdirectory(signal)

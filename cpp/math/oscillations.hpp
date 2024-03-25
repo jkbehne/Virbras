@@ -6,6 +6,7 @@
 #pragma once
 
 #include <complex>
+#include <iostream>
 
 #include <eigen3/Eigen/Dense>
 
@@ -81,6 +82,16 @@ class SimpleOscillator
      * Divide a simple oscillator by another simple oscillator
     */
     SimpleOscillator operator/(const SimpleOscillator&) const;
+
+    /**
+     * Test another simple oscillator for equality
+    */
+   bool operator==(const SimpleOscillator&) const;
+
+    /**
+     * Test another simple oscillator for inequality
+    */
+   bool operator!=(const SimpleOscillator&) const;
  };
 
 /**
@@ -97,3 +108,8 @@ SimpleOscillator operator/(const double, const SimpleOscillator&);
  * Convenince unary operator to negate a SimpleOscillator
 */
 SimpleOscillator operator-(const SimpleOscillator&);
+
+/**
+ * Convenience stream operator
+*/
+std::ostream& operator<<(std::ostream&, const SimpleOscillator&);

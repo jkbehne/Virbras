@@ -1,4 +1,4 @@
-#include "/Users/josh/Virbras/cpp/math/oscillations.hpp"
+#include "math/oscillations.hpp"
 
 #include <cmath>
 
@@ -58,6 +58,16 @@ SimpleOscillator SimpleOscillator::operator/(const SimpleOscillator& other) cons
   return *this * SimpleOscillator(1.0 / other.A, -1.0 * other.omega, -1.0 * other.phi);
 }
 
+bool SimpleOscillator::operator==(const SimpleOscillator& other) const
+{ 
+  return (A == other.A) and (omega == other.omega) and (phi == other.phi);
+}
+
+bool SimpleOscillator::operator!=(const SimpleOscillator& other) const
+{
+  return not (*this == other);
+}
+
 SimpleOscillator operator*(const double scale, const SimpleOscillator& so)
 {
   return so * scale;
@@ -71,4 +81,11 @@ SimpleOscillator operator/(const double scale, const SimpleOscillator& so)
 SimpleOscillator operator-(const SimpleOscillator& so)
 {
   return -1.0 * so;
+}
+
+ostream& operator<<(ostream& stream, const SimpleOscillator& so)
+{
+  stream << "SimpleOscillator(A=" << so.A << ", omega=" << so.omega << ", phi="
+    << so.phi << ")" << endl;
+  return stream;
 }
