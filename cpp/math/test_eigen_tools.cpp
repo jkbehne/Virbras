@@ -2,7 +2,6 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include <complex>
-#include <iostream>
 
 #include "math/eigen_tools.hpp"
 

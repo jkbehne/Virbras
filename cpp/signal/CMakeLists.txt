@@ -15,3 +15,12 @@ target_include_directories(test_tapped_delay_line
 )
 target_link_libraries(test_tapped_delay_line PUBLIC standard_compiler_flags)
 add_test(NAME test_tapped_delay_line COMMAND test_tapped_delay_line)
+
+add_executable(test_feedback_comb_filter test_feedback_comb_filter.cpp)
+target_include_directories(test_feedback_comb_filter
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
+    PUBLIC "/usr/local/include"
+    PUBLIC "/Users/josh/Virbras/cpp"
+)
+target_link_libraries(test_feedback_comb_filter PUBLIC standard_compiler_flags)
+add_test(NAME test_feedback_comb_filter COMMAND test_feedback_comb_filter)
