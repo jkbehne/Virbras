@@ -24,3 +24,15 @@ target_include_directories(test_feedback_comb_filter
 )
 target_link_libraries(test_feedback_comb_filter PUBLIC standard_compiler_flags)
 add_test(NAME test_feedback_comb_filter COMMAND test_feedback_comb_filter)
+
+add_executable(test_freeverb test_freeverb.cpp)
+target_include_directories(test_freeverb
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
+    PUBLIC "/usr/local/include"
+    PUBLIC "/Users/josh/Virbras/cpp"
+)
+target_link_libraries(test_freeverb
+    PUBLIC standard_compiler_flags
+    PRIVATE OpenMP::OpenMP_CXX
+)
+add_test(NAME test_freeverb COMMAND test_freeverb)

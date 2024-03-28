@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 
-#include "signal/signal_stream.hpp"
+#include "signal/filter_base.hpp"
 
 /**
  * Basic class for tapped delay line templated on the scalar type
@@ -34,12 +34,8 @@
  * on non-real-time sequence as well (this is done for testing).
 */
 template<typename ScalarType>
-class TappedDelayLine
+class TappedDelayLine : public FIRFilter<ScalarType>
 {
-  public: // Types
-    typedef std::shared_ptr<InputSignalStream<ScalarType>> InputType;
-    typedef std::shared_ptr<OutputSignalStream<ScalarType>> OutputType;
-
   public: // Members
     const std::vector<int> delays;
     const std::vector<ScalarType> coeffs;
@@ -48,13 +44,13 @@ class TappedDelayLine
     std::vector<ScalarType> buffer;
     int buffer_idx;
 
-  private: // Methods
+  public: // Methods
     /**
      * Produce the next output based on the current input and internal state
      * 
      * A circular buffer is used to manage reading the delayed samples.
     */
-    ScalarType next(const ScalarType input)
+    virtual ScalarType next(const ScalarType input) override
     {
       // Compute the output
       auto output = coeffs.front() * input;
@@ -80,7 +76,11 @@ class TappedDelayLine
       return output;
     }
 
-  public: // Methods
+    virtual const int max_delay() const override
+    {
+      return buffer.size();
+    }
+
     /**
      * Constructor mostly deals with finding max delay and setting up the buffer
      * 
@@ -99,37 +99,5 @@ class TappedDelayLine
       int max_delay = 0;
       if (max_iter != delays.end()) max_delay = *max_iter;
       buffer = std::vector<ScalarType>(max_delay);
-    }
-
-    /**
-     * Process an entire input and write to the output until input is exhausted
-     * 
-     * Note: This function won't return if the input stream is a real-time
-     * stream, unless the stream eventually fails to return a result.
-     * 
-     * Note: This function writes delay transients, which is the maximum delay
-     * in terms of number of samples
-    */
-    void process(const InputType& isignal, const OutputType& osignal)
-    {
-      // Make sure pointers are valid
-      assert(isignal != nullptr);
-      assert(osignal != nullptr);
-
-      const int max_delay = buffer.size();
-
-      // Read the input source until it's exhasuted
-      while (true)
-      {
-        const auto input = isignal->read_next();
-        if (not input) break; // Input stream is done
-        osignal->write_next(next(*input));
-      }
-
-      // Use zeros as inputs to calculate the final transients
-      for (int i = 0; i < max_delay; ++i)
-      {
-        osignal->write_next(next({}));
-      }
     }
 };

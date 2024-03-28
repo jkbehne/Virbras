@@ -18,20 +18,16 @@
 #include <memory>
 #include <vector>
 
-#include "signal/signal_stream.hpp"
+#include "signal/filter_base.hpp"
 
 template<typename ScalarType>
-class FeedforwardFeedbackCombFilter
+class FeedforwardFeedbackCombFilter : public IIRFilter<ScalarType>
 {
-  public: // Types
-    typedef std::shared_ptr<InputSignalStream<ScalarType>> InputType;
-    typedef std::shared_ptr<OutputSignalStream<ScalarType>> OutputType;
-
   public: // Members
     const ScalarType input_coeff;
     const ScalarType input_delay_coeff;
     const ScalarType output_coeff;
-    const int delay;
+    const int delay; // TODO: Could be a template parameter
 
   private: // Members
     std::vector<ScalarType> input_buffer;
@@ -63,7 +59,7 @@ class FeedforwardFeedbackCombFilter
      * 
      * A circular buffer is used to manage reading the delayed samples.
     */
-    ScalarType next(const ScalarType input)
+    virtual ScalarType next(const ScalarType input) override
     {
       // Compute the output
       const auto delay_input = input_buffer[buffer_idx];
@@ -80,38 +76,94 @@ class FeedforwardFeedbackCombFilter
       // Return the previously computed result
       return output;
     }
+};
+
+/**
+ * Basic structure for a one pole lowpass IIR filter
+ * 
+ * Implements y[n] = alpha * x[n] + beta * y[n - 1]
+*/
+template<typename ScalarType>
+class OnePoleLowpassFilter : public IIRFilter<ScalarType>
+{
+  public: // Members
+    const ScalarType alpha;
+    const ScalarType beta;
+
+  private: // Members
+    ScalarType prev_output;
+
+  public: // Methods
+    /**
+     * See class comment for information about construction parameters
+     * 
+     * Note: We assert that |beta| < 1 for stability
+    */
+    OnePoleLowpassFilter(
+      const ScalarType alpha_,
+      const ScalarType beta_
+    ) : alpha(alpha_), beta(beta_)
+    {
+      assert(abs(beta) < 1);
+    }
 
     /**
-     * Process an entire input and write to the output until input is exhausted
-     * 
-     * Note: This function won't return if the input stream is a real-time
-     * stream, unless the stream eventually fails to return a result.
-     * 
-     * Note: This function writes the number of specified delay transients,
-     * although technically this is implementing an IIR filter.
+     * Implements the difference equation given in the class comment for one sample
     */
-    void process(
-      const InputType& isignal,
-      const OutputType& osignal,
-      const int num_output_transients
-    )
+    virtual ScalarType next(const ScalarType input) override
     {
-      // Make sure pointers are valid
-      assert(isignal != nullptr);
-      assert(osignal != nullptr);
+      const auto output = alpha * input + beta * prev_output;
+      prev_output = output;
+      return output;
+    }
+};
 
-      // Read the input source until it's exhasuted
-      while (true)
-      {
-        const auto input = isignal->read_next();
-        if (not input) break; // Input stream is done
-        osignal->write_next(next(*input));
-      }
+/**
+ * Structure to implement filtered feedback comb filter
+ * 
+ * Implements the transfer function:
+ * 
+ * H(z) = 1 / (1 - H_lp(z) * z^(-m))
+ * 
+ * where H_lp(z) = alpha / (1 - beta z^(-1))
+*/
+template<typename ScalarType>
+class FilteredFeedbackCombFilter : public IIRFilter<ScalarType>
+{
+  public: // Members
+    const ScalarType alpha;
+    const ScalarType beta;
+    const int feedback_delay;
 
-      // Use zeros as inputs to calculate the final transients
-      for (int i = 0; i < num_output_transients; ++i)
-      {
-        osignal->write_next(next({}));
-      }
+  private: // Members
+    OnePoleLowpassFilter<ScalarType> lp_filter;
+    std::vector<ScalarType> out_buffer;
+    int buffer_idx;
+
+  public: // Methods
+    /**
+     * Construct based on one pole lowpass parameters and a feedback delay
+    */
+    FilteredFeedbackCombFilter(
+      const ScalarType alpha_,
+      const ScalarType beta_,
+      const int feedback_delay_
+    ) : alpha(alpha_),
+        beta(beta_),
+        feedback_delay(feedback_delay_),
+        lp_filter(OnePoleLowpassFilter(alpha, beta)),
+        out_buffer(std::vector<ScalarType>(feedback_delay)),
+        buffer_idx(0) {}
+
+    /**
+     * Implement the transfer function in the class comment for a single sample
+    */
+    virtual ScalarType next(const ScalarType input) override
+    {
+      const auto delay_output = out_buffer[buffer_idx];
+      const auto output = input + lp_filter.next(delay_output);
+      out_buffer[buffer_idx] = output;
+      ++buffer_idx;
+      return output;
     }
 };

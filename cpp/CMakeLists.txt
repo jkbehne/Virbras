@@ -5,8 +5,12 @@ enable_testing()
 find_package(Python COMPONENTS Interpreter Development)
 find_package(pybind11 CONFIG)
 
+find_package(OpenMP REQUIRED)
+
 add_library(standard_compiler_flags INTERFACE)
-target_compile_features(standard_compiler_flags INTERFACE cxx_std_20)
+target_compile_features(standard_compiler_flags
+    INTERFACE cxx_std_20
+)
 
 add_subdirectory(math)
 add_subdirectory(signal)
