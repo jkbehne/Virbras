@@ -15,8 +15,8 @@ typedef typename MIMOIIRFilter<double>::InputListType InputListType;
 typedef typename MIMOIIRFilter<double>::OutputListType OutputListType;
 
 OutputChannels freeverb_filter(
-  vector<double> left_input,
-  vector<double> right_input,
+  const vector<double>& left_input,
+  const vector<double>& right_input,
   const int num_transients,
   const int stereo_spread,
   const double dry,
@@ -36,8 +36,8 @@ OutputChannels freeverb_filter(
 
   // Make the inputs
   const InputListType isignal_list {
-    make_shared<InputType>(std::move(left_input)),
-    make_shared<InputType>(std::move(right_input))
+    make_shared<InputType>(left_input),
+    make_shared<InputType>(right_input)
   };
   const OutputListType osignal_list {
     make_shared<OutputType>(num_output_samples),
@@ -48,9 +48,9 @@ OutputChannels freeverb_filter(
   filter.process(isignal_list, osignal_list, num_transients);
 
   // Get the outputs
-  auto left_output = (dynamic_cast<const OutputType&>(*osignal_list[0])).output;
-  auto right_output = (dynamic_cast<const OutputType&>(*osignal_list[1])).output;
-  return make_tuple(std::move(left_output), std::move(right_output));
+  const auto left_output = (dynamic_cast<const OutputType&>(*osignal_list[0])).output;
+  const auto right_output = (dynamic_cast<const OutputType&>(*osignal_list[1])).output;
+  return make_tuple(left_output, right_output);
 }
 
 PYBIND11_MODULE(signal_cpp, m)
