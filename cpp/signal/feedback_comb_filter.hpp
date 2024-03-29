@@ -102,7 +102,7 @@ class OnePoleLowpassFilter : public IIRFilter<ScalarType>
     OnePoleLowpassFilter(
       const ScalarType alpha_,
       const ScalarType beta_
-    ) : alpha(alpha_), beta(beta_)
+    ) : alpha(alpha_), beta(beta_), prev_output()
     {
       assert(abs(beta) < 1);
     }
@@ -163,7 +163,7 @@ class FilteredFeedbackCombFilter : public IIRFilter<ScalarType>
       const auto delay_output = out_buffer[buffer_idx];
       const auto output = input + lp_filter.next(delay_output);
       out_buffer[buffer_idx] = output;
-      ++buffer_idx;
+      buffer_idx = (++buffer_idx) % out_buffer.size();
       return output;
     }
 };

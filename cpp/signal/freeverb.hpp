@@ -66,7 +66,7 @@ MIMOIIRFilter<ScalarType> make_freeverb_filter(
     FilterVariantType(FilteredFeedbackCombFilter(alpha, beta, lbcf_delay8))
   };
   ParallelCombination<ScalarType> left_lbfc_bank(
-    std::move(left_lbcf_filters), Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>::Ones(8)
+    left_lbcf_filters, Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>::Ones(8)
   );
 
   // Create the series all-pass approximation filters (left channel)
@@ -91,7 +91,7 @@ MIMOIIRFilter<ScalarType> make_freeverb_filter(
     FilterVariantType(FilteredFeedbackCombFilter(alpha, beta, lbcf_delay8 + stereo_spread))
   };
   ParallelCombination<ScalarType> right_lbfc_bank(
-    std::move(right_lbcf_filters), Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>::Ones(8)
+    right_lbcf_filters, Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>::Ones(8)
   );
 
   // Create the series all-pass approximation filters (right channel)

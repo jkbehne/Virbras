@@ -4,8 +4,10 @@
 */
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <variant>
+#include <type_traits>
 
 #include <eigen3/Eigen/Dense>
 
@@ -74,7 +76,7 @@ class SeriesCombination : public IIRFilter<ScalarType>
  * outputs.
 */
 template<typename ScalarType>
-class ParallelCombination : IIRFilter<ScalarType>
+class ParallelCombination : public IIRFilter<ScalarType>
 {
   public: // Types
     typedef std::shared_ptr<InputSignalStream<ScalarType>> InputType;
@@ -112,6 +114,7 @@ class ParallelCombination : IIRFilter<ScalarType>
       for (int i = 0; i < units.size(); ++i)
       {
         output(i) = std::visit([input](auto&& unit){return unit.next(input);}, units[i]);
+        assert(not isnan(output(i)));
       }
       const auto m_output = lt.transpose() * output;
       return m_output(0, 0);

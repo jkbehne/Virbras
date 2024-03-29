@@ -1,4 +1,5 @@
-#include <tuple>
+#include <filesystem>
+#include <utility>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -6,15 +7,15 @@
 #include "signal/freeverb.hpp"
 
 namespace py = pybind11;
+
 using namespace std;
 
-typedef tuple<vector<double>, vector<double>> OutputChannels;
 typedef STLVectorInputSignal<double> InputType;
 typedef STLVectorOutputSignal<double> OutputType;
 typedef typename MIMOIIRFilter<double>::InputListType InputListType;
 typedef typename MIMOIIRFilter<double>::OutputListType OutputListType;
 
-OutputChannels freeverb_filter(
+pair<vector<double>, vector<double>> freeverb_filter(
   const vector<double>& left_input,
   const vector<double>& right_input,
   const int num_transients,
@@ -48,9 +49,9 @@ OutputChannels freeverb_filter(
   filter.process(isignal_list, osignal_list, num_transients);
 
   // Get the outputs
-  const auto left_output = (dynamic_cast<const OutputType&>(*osignal_list[0])).output;
-  const auto right_output = (dynamic_cast<const OutputType&>(*osignal_list[1])).output;
-  return make_tuple(left_output, right_output);
+  auto left_output = (dynamic_cast<const OutputType&>(*osignal_list[0])).output;
+  auto right_output = (dynamic_cast<const OutputType&>(*osignal_list[1])).output;
+  return {move(left_output), move(right_output)};
 }
 
 PYBIND11_MODULE(signal_cpp, m)

@@ -48,3 +48,14 @@ target_include_directories(signal_cpp
 target_link_libraries(signal_cpp
     PUBLIC standard_compiler_flags
 )
+
+add_executable(freeverb_main freeverb_main.cpp)
+target_include_directories(freeverb_main
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
+    PUBLIC "/usr/local/include"
+    PUBLIC "/Users/josh/Virbras/cpp"
+)
+target_link_libraries(freeverb_main
+    PUBLIC standard_compiler_flags
+    PRIVATE OpenMP::OpenMP_CXX
+)
