@@ -36,3 +36,15 @@ target_link_libraries(test_freeverb
     PRIVATE OpenMP::OpenMP_CXX
 )
 add_test(NAME test_freeverb COMMAND test_freeverb)
+
+pybind11_add_module(signal_cpp signal_cpp.cpp)
+target_include_directories(signal_cpp
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
+    PUBLIC "/usr/local/include"
+    PUBLIC "/usr/local/include/eigen3"
+    PUBLIC "/Library/Frameworks/Python.framework/Versions/3.12/include/python3.12/"
+    PUBLIC "/Users/josh/Virbras/cpp"
+)
+target_link_libraries(signal_cpp
+    PUBLIC standard_compiler_flags
+)
