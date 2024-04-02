@@ -5,6 +5,18 @@
 #include <optional>
 #include <vector>
 
+/**
+ * The basic idea here is to implement a time-varying delay line
+ * 
+ * Implements the following finite difference equation:
+ * 
+ * y[n] = a * x[n] + b * x[n - m[n]]
+ * 
+ * where m[n] is a time-varying delay sequence. Interpolation between
+ * samples is performed with linear interpolation. This choice may not
+ * work well for high bandwidth signals at lower sampling rates, but it
+ * tends to sound okay for most audio applications.
+*/
 template<typename ScalarType>
 class TimeVaryingDelayLine
 {
@@ -21,6 +33,9 @@ class TimeVaryingDelayLine
     int buffer_idx;
 
   public: // Methods
+    /**
+     * Set the maximum delay, input scaling, and delay scaling
+    */
     TimeVaryingDelayLine(
       const int max_delay_,
       const ScalarType input_coeff_,
@@ -31,6 +46,9 @@ class TimeVaryingDelayLine
         buffer(max_delay_),
         buffer_idx(0) {}
 
+    /**
+     * Get the next output sample based on the input and a (non-integer) delay
+    */
     ScalarType next(const ScalarType input, const double delay)
     {
       // Check that the delay can actually be computed
@@ -69,6 +87,9 @@ class TimeVaryingDelayLine
       buffer_idx = buffer_idx % max_delay;
     }
 
+    /**
+     * Process a whole stream of data (real-time or offline)
+    */
     void process(
       std::function<ReadType()>& in_stream,
       std::function<void(const ScalarType)>& out_stream,
