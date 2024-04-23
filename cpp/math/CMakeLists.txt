@@ -31,3 +31,7 @@ add_test(NAME test_eigen_tools COMMAND test_eigen_tools)
 add_executable(test_vector_tools test_vector_tools.cpp)
 target_link_libraries(test_vector_tools PUBLIC math)
 add_test(NAME test_vector_tools COMMAND test_vector_tools)
+
+add_executable(test_non_linear_tools test_non_linear_tools.cpp)
+target_link_libraries(test_non_linear_tools PUBLIC math)
+add_test(NAME test_non_linear_tools COMMAND test_non_linear_tools)
