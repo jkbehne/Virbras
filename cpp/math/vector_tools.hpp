@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <iostream>
 #include <vector>
 
 namespace VectorTools {
@@ -21,6 +22,19 @@ bool all_close(
     if (abs(a[i] - b[i]) > tolerance) return false;
   }
   return true;
+}
+
+template<typename ScalarType>
+std::ostream& operator<<(std::ostream& stream, const std::vector<ScalarType>& input)
+{
+  stream << "[";
+  for (unsigned int i = 0; i < input.size(); ++i)
+  {
+    stream << input[i];
+    if (i == input.size() - 1) stream << "]";
+    else stream << ", ";
+  }
+  return stream;
 }
 
 }

@@ -7,11 +7,46 @@
 #pragma once
 
 #include <cmath>
+#include <iostream>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace Signal {
 
+template<typename ScalarType, typename FilterType>
+std::vector<ScalarType> run_filter(
+  const std::vector<ScalarType>& input,
+  FilterType& filter,
+  const unsigned int num_transients
+)
+{
+  // Setup the output
+  std::vector<ScalarType> out(input.size() + num_transients);
+
+  // Run the filter
+  for (unsigned int i = 0; i < input.size(); ++i)
+  {
+    out[i] = filter.next(input[i]);
+  }
+
+  // Add the transients
+  for (unsigned int i = 0; i < num_transients; ++i)
+  {
+    out[input.size() + i] = filter.next({});
+  }
+
+  return out;
+}
+
 enum class FirstOrderFilterType { Lowpass, Highpass, LowShelving, HighShelving };
+
+// TODO: There's probably cleaner / more reusable ways to do this
+template<typename EnumType>
+std::ostream& operator<<(std::ostream& stream, const EnumType& en)
+{
+  return stream << static_cast<typename std::underlying_type<EnumType>::type>(en);
+}
 
 /**
  * Basic class that implements the finite difference equation:
@@ -128,13 +163,14 @@ template<typename ScalarType, bool IsLowShelving>
 std::pair<ScalarType, ScalarType> compute_gamma_mu(
   const ScalarType cutoff_freq,
   const ScalarType sample_freq,
-  const ScalarType gain_dB,
+  const ScalarType gain_dB
 )
 {
   const ScalarType theta_c = 2.0 * M_PI * cutoff_freq / sample_freq;
   const ScalarType mu = std::pow(10.0, gain_dB / 20.0);
-  if constexpr (IsLowShelving) const ScalarType beta = 4.0 / (1.0 + mu);
-  else const ScalarType beta = 0.25 * (1.0 + mu);
+  ScalarType beta;
+  if constexpr (IsLowShelving) beta = 4.0 / (1.0 + mu);
+  else beta = 0.25 * (1.0 + mu);
   const ScalarType delta = beta * std::tan(0.5 * theta_c);
   const ScalarType gamma = (1.0 - delta) / (1.0 + delta);
   return {gamma, mu};
@@ -158,7 +194,11 @@ FirstOrderFilter<ScalarType> make_low_shelf_first_order(
   const ScalarType b1 = -gamma;
 
   // Return the resulting filter
-  return FirstOrderFilter(1.0 /* dry */, mu - 1.0 /* wet */, a0, a1, b1, FirstOrderFilterType::LowShelving);
+  return FirstOrderFilter(
+    static_cast<ScalarType>(1.0) /* dry */,
+    static_cast<ScalarType>(mu - 1.0) /* wet */,
+    a0, a1, b1, FirstOrderFilterType::LowShelving
+  );
 }
 
 template<typename ScalarType>
@@ -177,6 +217,10 @@ FirstOrderFilter<ScalarType> make_high_shelf_first_order(
   const ScalarType b1 = -gamma;
 
   // Return the resulting filter
-  return FirstOrderFilter(1.0 /* dry */, mu - 1.0 /* wet */, a0, a1, b1, FirstOrderFilterType::HighShelving);
+  return FirstOrderFilter(
+    static_cast<ScalarType>(1.0) /* dry */,
+    static_cast<ScalarType>(mu - 1.0) /* wet */,
+    a0, a1, b1, FirstOrderFilterType::HighShelving
+  );
 }
 } // End namespace Signal

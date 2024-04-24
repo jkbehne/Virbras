@@ -37,6 +37,24 @@ target_link_libraries(test_freeverb
 )
 add_test(NAME test_freeverb COMMAND test_freeverb)
 
+add_executable(test_utilities test_utilities.cpp)
+target_include_directories(test_utilities
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
+    PUBLIC "/usr/local/include"
+    PUBLIC "/Users/josh/Virbras/cpp"
+)
+target_link_libraries(test_utilities PUBLIC standard_compiler_flags)
+add_test(NAME test_utilities COMMAND test_utilities)
+
+add_executable(test_analog_to_digital_filters test_analog_to_digital_filters.cpp)
+target_include_directories(test_analog_to_digital_filters
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
+    PUBLIC "/usr/local/include"
+    PUBLIC "/Users/josh/Virbras/cpp"
+)
+target_link_libraries(test_analog_to_digital_filters PUBLIC standard_compiler_flags)
+add_test(NAME test_analog_to_digital_filters COMMAND test_analog_to_digital_filters)
+
 pybind11_add_module(signal_cpp signal_cpp.cpp)
 target_include_directories(signal_cpp
     INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
