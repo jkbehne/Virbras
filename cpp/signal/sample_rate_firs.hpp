@@ -11,11 +11,11 @@ namespace FIR {
 /**
  * Convert a compile-time array into a std::vector of a specific scalar type
 */
-template<typename ScalarType>
-std::vector<ScalarType> array_to_vector(const double[]& array, const unsigned int num_elements)
+template<typename ScalarType, int NumElements>
+std::vector<ScalarType> array_to_vector(const double (&array)[NumElements])
 {
-  std::vector<ScalarType> output(num_elements);
-  for (unsigned int i = 0; i < num_elements, ++i)
+  std::vector<ScalarType> output(NumElements);
+  for (unsigned int i = 0; i < NumElements; ++i)
   {
     output[i] = array[i];
   }

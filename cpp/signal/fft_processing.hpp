@@ -10,108 +10,10 @@
 #include <eigen3/Eigen/Dense>
 #include <fftw3.h>
 
+#include "math/vector_tools.hpp"
 #include "signal/sample_rate_firs.hpp"
 
 namespace Signal {
-
-/**
- * Simple class to manage real-time convolution in the frequency domain. Transients
- * are handled via overlap-add.
-*/
-template<typename ScalarType>
-class OverlapAddConvolver
-{
-  public: // Members
-    const unsigned int window_size;
-    const unsigned int num_transients;
-    const unsigned int output_size;
-
-  private: // Members
-    DFTConvolver<ScalarType> convolver;
-    std::vector<ScalarType> output;
-
-    unsigned int write_idx;
-
-    unsigned int input_idx;
-    unsigned int output_idx;
-
-  private: // Methods
-    /**
-     * Writes zeros to all outputs that need to be overridden
-    */
-    void ready_output()
-    {
-      // Figure out where to write zeros
-      const unsigned int num_zeros = window_size;
-      const unsigned int zero_start = (write_idx + num_transients) % output_size;
-
-      // Write the zeros
-      #pragma omp parallel for
-      for (unsigned int i = 0; i < num_zeros; ++i)
-      {
-        const unsigned int idx = (zero_start + i) % output_size;
-        output[idx] = {};
-      }
-    }
-
-    /**
-     * Writes outputs via addition (so transients sum to full filter)
-    */
-    void write_output()
-    {
-      // Write the output from the convolver
-      #pragma omp parallel for
-      for (unsigned int i = 0; i < output_size; ++i)
-      {
-        const unsigned int idx = (write_idx + i) % output_size;
-        output[idx] += convolver.output[idx];
-      }
-
-      // Update the indexes
-      output_idx = write_idx;
-      write_idx = (write_idx + window_size) % output_size;
-    }
-
-  public: // Methods
-    /**
-     * Construct the object from a window size (input data) and filter
-    */
-    OverlapAddConvolver(
-      const unsigned int window_size_,
-      const std::vector<ScalarType>& filter_coeffs
-    ) : window_size(window_size_),
-        convolver({window_size, filter_coeffs}),
-        num_transients(convolver.filter_size - 1),
-        output_size(convolver.output_size),
-        write_idx(),
-        input_idx(),
-        output_idx() {}
-
-    /**
-     * Push input to buffer, do FFT (if ready), run filter, output result
-    */
-    ScalarType next(const ScalarType x)
-    {
-      // Push the input into the buffer and check if we need to do an FFT
-      convolver.input[input_idx] = static_cast<double>(x);
-      ++input_idx;
-      if (input_idx == window_size)
-      {
-        // Reset input idx and run the filter in the frequency domain
-        input_idx = 0;
-        convolver.run_filter();
-
-        // Do overlap-add on the output
-        ready_output();
-        write_output();
-      }
-
-      const auto out = output[output_idx];
-      ++output_idx;
-      output_idx = output_idx % output_size;
-      return out;
-    }
-};
 
 /**
  * Engine for running convolutions in the frequency domain. Handles zero padding for transients
@@ -125,6 +27,8 @@ class DFTConvolver
     const unsigned int filter_size;
     const unsigned int output_size;
     const unsigned int num_fft;
+
+    const ScalarType scale;
 
     double* input;
     double* output;
@@ -154,7 +58,8 @@ class DFTConvolver
     ) : input_size(input_size_),
         filter_size(filter_coeffs.size()),
         output_size(input_size + filter_size - 1),
-        num_fft(std::bit_ceil(output_size))
+        num_fft(std::bit_ceil(output_size)),
+        scale(1.0 / static_cast<ScalarType>(num_fft))
     {
       // Allocate memory
       input = new double[num_fft]();
@@ -168,7 +73,7 @@ class DFTConvolver
       // Copy filter coefficients
       for (unsigned int i = 0; i < filter_coeffs.size(); ++i)
       {
-        input[i] = static_cast<double>(filter_coeffs[i]);
+        input[i] = static_cast<double>(scale * filter_coeffs[i]);
       }
 
       // Run the FFT for the filter
@@ -225,6 +130,110 @@ class DFTConvolver
 };
 
 /**
+ * Simple class to manage real-time convolution in the frequency domain. Transients
+ * are handled via overlap-add.
+*/
+template<typename ScalarType>
+class OverlapAddConvolver
+{
+  // Note: Order of declaration is a little strange here so we can do everything with an initializer list
+  public: // Members
+    const unsigned int window_size;
+
+  private: // Members
+    DFTConvolver<ScalarType> convolver;
+    std::vector<ScalarType> output;
+
+    unsigned int write_idx;
+
+    unsigned int input_idx;
+    unsigned int output_idx;
+
+  public: // Members
+    const unsigned int num_transients;
+    const unsigned int output_size;
+
+  private: // Methods
+    /**
+     * Writes zeros to all outputs that need to be overridden
+    */
+    void ready_output()
+    {
+      // Figure out where to write zeros
+      const unsigned int num_zeros = window_size;
+      const unsigned int zero_start = (write_idx + num_transients) % output_size;
+
+      // Write the zeros
+      #pragma omp parallel for
+      for (unsigned int i = 0; i < num_zeros; ++i)
+      {
+        const unsigned int idx = (zero_start + i) % output_size;
+        output[idx] = {};
+      }
+    }
+
+    /**
+     * Writes outputs via addition (so transients sum to full filter)
+    */
+    void write_output()
+    {
+      // using namespace VectorTools;
+      // Write the output from the convolver
+      #pragma omp parallel for
+      for (unsigned int i = 0; i < output_size; ++i)
+      {
+        const unsigned int idx = (write_idx + i) % output_size;
+        output[idx] += convolver.output[i];
+      }
+
+      // Update the indices
+      output_idx = write_idx;
+      write_idx = (write_idx + window_size) % output_size;
+    }
+
+  public: // Methods
+    /**
+     * Construct the object from a window size (input data) and filter
+    */
+    OverlapAddConvolver(
+      const unsigned int window_size_,
+      const std::vector<ScalarType>& filter_coeffs
+    ) : window_size(window_size_),
+        convolver(DFTConvolver<ScalarType>(window_size, filter_coeffs)),
+        output(convolver.output_size),
+        num_transients(convolver.filter_size - 1),
+        output_size(convolver.output_size),
+        write_idx(),
+        input_idx(),
+        output_idx() {}
+
+    /**
+     * Push input to buffer, do FFT (if ready), run filter, output result
+    */
+    ScalarType next(const ScalarType x)
+    {
+      // Push the input into the buffer and check if we need to do an FFT
+      convolver.input[input_idx] = static_cast<double>(x);
+      ++input_idx;
+      if (input_idx == window_size)
+      {
+        // Reset input idx and run the filter in the frequency domain
+        input_idx = 0;
+        convolver.run_filter();
+
+        // Do overlap-add on the output
+        ready_output();
+        write_output();
+      }
+
+      const auto out = output[output_idx];
+      ++output_idx;
+      output_idx = output_idx % output_size;
+      return out;
+    }
+};
+
+/**
  * Paired intepolation and decimation operation engine
 */
 template<typename ScalarType, int UpFactor>
@@ -238,7 +247,7 @@ class PairedInterpolatorDecimator
 
   public: // Static Members
     static constexpr ScalarType scale = static_cast<ScalarType>(UpFactor);
-    static const std::vector<ScalarType> filter = FIR::array_to_vector<ScalarType>(FIR::interp_769_4x, 769);
+    inline static const std::vector<ScalarType> filter = FIR::array_to_vector<ScalarType, 769>(FIR::interp_769_4x);
 
   private: // Members
     OverlapAddConvolver<ScalarType> convolver;
@@ -251,7 +260,7 @@ class PairedInterpolatorDecimator
       InterpType out;
       for (unsigned int i = 0; i < UpFactor; ++i)
       {
-        out(i) = scale * convolver.next(i == 0 ? xn : {});
+        out(i) = scale * convolver.next(i == 0 ? xn : 0.0);
       }
       return out;
     }

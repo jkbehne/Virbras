@@ -24,6 +24,10 @@ bool all_close(
   return true;
 }
 
+} // End namespace VectorTools
+
+namespace Signal {
+
 template<typename ScalarType>
 std::ostream& operator<<(std::ostream& stream, const std::vector<ScalarType>& input)
 {
@@ -37,4 +41,4 @@ std::ostream& operator<<(std::ostream& stream, const std::vector<ScalarType>& in
   return stream;
 }
 
-}
+} // End namespace Signal

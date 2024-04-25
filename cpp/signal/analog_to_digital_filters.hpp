@@ -42,9 +42,10 @@ std::vector<ScalarType> run_filter(
 enum class FirstOrderFilterType { Lowpass, Highpass, LowShelving, HighShelving };
 
 // TODO: There's probably cleaner / more reusable ways to do this
-template<typename EnumType>
+template<typename EnumType, typename = std::enable_if<std::is_enum<EnumType>::value>::type>
 std::ostream& operator<<(std::ostream& stream, const EnumType& en)
 {
+  // static_assert(std::is_enum<EnumType>::value);
   return stream << static_cast<typename std::underlying_type<EnumType>::type>(en);
 }
 

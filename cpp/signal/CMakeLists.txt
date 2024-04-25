@@ -55,6 +55,18 @@ target_include_directories(test_analog_to_digital_filters
 target_link_libraries(test_analog_to_digital_filters PUBLIC standard_compiler_flags)
 add_test(NAME test_analog_to_digital_filters COMMAND test_analog_to_digital_filters)
 
+add_executable(test_fft_processing test_fft_processing.cpp)
+target_include_directories(test_fft_processing
+    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
+    PUBLIC "/usr/local/include"
+    PUBLIC "/Users/josh/Virbras/cpp"
+    PRIVATE PkgConfig::FFTW
+)
+target_link_libraries(test_fft_processing
+    PUBLIC standard_compiler_flags
+    PRIVATE PkgConfig::FFTW
+)
+
 pybind11_add_module(signal_cpp signal_cpp.cpp)
 target_include_directories(signal_cpp
     INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
